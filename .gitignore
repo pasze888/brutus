@@ -1,0 +1,10 @@
+aeadlibs/
+.xmake/
+build/
+.vscode/
+
+*.o
+
+brutus
+mkaeadlibs.log
+test.txt
