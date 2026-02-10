@@ -2,9 +2,10 @@ aeadlibs/
 .xmake/
 build/
 .vscode/
-
+test/
 *.o
-
+*.a
 brutus
 mkaeadlibs.log
 test.txt
+aeadlibs.txt
