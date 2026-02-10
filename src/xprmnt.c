@@ -3,10 +3,10 @@
 
 // Experimental stuff.
 
-#include <stdio.h>
 #include <math.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "brutus.h"
@@ -119,143 +119,135 @@ fail:
 
 #define XBLOCK 256
 
-int test_xprmnt(caesar_t *aead, int limit)
-{
-    int i, j;
-    unsigned long long mlen, clen, steps;
-    uint8_t key[256], npub[64], nsec[64],
-        mx[XBLOCK], my[XBLOCK], cx[XBLOCK], cy[XBLOCK];
-    clock_t stim, etim;
-    uint32_t cnt[XBLOCK][XBLOCK];
-    char fn[256];
-    FILE *f;
+int test_xprmnt(caesar_t *aead, int limit) {
+  int i, j;
+  unsigned long long mlen, clen, steps;
+  uint8_t key[256], npub[64], nsec[64], mx[XBLOCK], my[XBLOCK], cx[XBLOCK],
+      cy[XBLOCK];
+  clock_t stim, etim;
+  uint32_t cnt[XBLOCK][XBLOCK];
+  char fn[256];
+  FILE *f;
 
-    if (brutus_verbose) {
-        printf("[%s] feedback (limit=%d sec) "
-            " key=%d  nsec=%d  npub=%d  a=%d\n",
-            aead->name, limit,
-            aead->keybytes, aead->nsecbytes,
-            aead->npubbytes, aead->abytes);
-    }
+  if (brutus_verbose) {
+    printf("[%s] feedback (limit=%d sec) "
+           " key=%d  nsec=%d  npub=%d  a=%d\n",
+           aead->name, limit, aead->keybytes, aead->nsecbytes, aead->npubbytes,
+           aead->abytes);
+  }
 
-    limit *= CLOCKS_PER_SEC;
+  limit *= CLOCKS_PER_SEC;
 
-    if (aead->abytes > sizeof(cx) || aead->keybytes > sizeof(key) ||
-        aead->nsecbytes > sizeof(nsec) || aead->npubbytes > sizeof(npub))
-        goto fail;
+  if (aead->abytes > sizeof(cx) || aead->keybytes > sizeof(key) ||
+      aead->nsecbytes > sizeof(nsec) || aead->npubbytes > sizeof(npub))
+    goto fail;
 
-    memset(key, 0x00, sizeof(key));
-    memset(npub, 0x00, sizeof(npub));
-    memset(nsec, 0x00, sizeof(nsec));
-    memset(mx, 0x00, sizeof(mx));
-    memset(my, 0x00, sizeof(my));
-    memset(cx, 0x00, sizeof(cx));
-    memset(cy, 0x00, sizeof(cy));
+  memset(key, 0x00, sizeof(key));
+  memset(npub, 0x00, sizeof(npub));
+  memset(nsec, 0x00, sizeof(nsec));
+  memset(mx, 0x00, sizeof(mx));
+  memset(my, 0x00, sizeof(my));
+  memset(cx, 0x00, sizeof(cx));
+  memset(cy, 0x00, sizeof(cy));
 
-    memset(cnt, 0x00, sizeof(cnt));
+  memset(cnt, 0x00, sizeof(cnt));
 
-    mlen = sizeof(cx) - aead->abytes;
+  mlen = sizeof(cx) - aead->abytes;
+  if (aead->encrypt(cx, &clen, mx, mlen, mx, 0, nsec, npub, key) != 0)
+    goto fail;
+  if (clen > sizeof(cx))
+    goto fail;
+
+  stim = clock();
+  steps = 0;
+  do {
+    detseq_fill(key, aead->keybytes);
+    detseq_fill(npub, aead->npubbytes);
+    detseq_fill(nsec, aead->nsecbytes);
+    detseq_fill(mx, mlen);
+
     if (aead->encrypt(cx, &clen, mx, mlen, mx, 0, nsec, npub, key) != 0)
-        goto fail;
-    if (clen > sizeof(cx))
-        goto fail;
-
-    stim = clock();
-    steps = 0;
-    do {
-        detseq_fill(key, aead->keybytes);
-        detseq_fill(npub, aead->npubbytes);
-        detseq_fill(nsec, aead->nsecbytes);
-        detseq_fill(mx, mlen);
-
-        if (aead->encrypt(cx, &clen, mx, mlen, mx, 0, nsec, npub, key) != 0)
-            goto fail;
-
-        for (i = 0; i < mlen; i++) {
-            memcpy(my, mx, mlen);
-            my[i] += (detseq32() % 255) + 1;
-            if (aead->encrypt(cy, &clen, my, mlen, mx, 0,
-                nsec, npub, key) != 0)
-                goto fail;
-            for (j = 0; j < clen; j++) {
-                if (cx[j] != cy[j])
-                    cnt[i][j]++;
-            }
-        }
-        steps++;
-        etim = clock() - stim;
-    } while (etim < limit);
-
-    strncpy(fn, aead->name, sizeof(fn));
-    for (i = 0; i < sizeof(fn); i++) {
-        if (fn[i] == 0 || fn[i] == '-')
-            break;
-    }
-
-    strncpy(&fn[i], ".def", sizeof(fn) - i);
-    f = fopen(fn, "w");
-    if (f == NULL) {
-        perror(fn);
-        return 1;
-    }
-    fn[i] = 0;
-    fprintf(f, "[%s]<br>key:%d  nsec:%d  npub:%d  pad:%d\n",
-            fn, 8 * aead->keybytes, 8 * aead->nsecbytes,
-            8 * aead->npubbytes, 8 * aead->abytes);
-    fclose(f);
-
-    strncpy(&fn[i], ".pgm", sizeof(fn) - i);
-    f = fopen(fn, "w");
-    if (f == NULL) {
-        perror(fn);
-        return 1;
-    }
-
-    // output the file
-
-    fprintf(f, "P2\n# %s\n%d %d\n255\n",
-        fn, (int) clen + 2, (int) mlen + 2);
-
-    for (i = 0; i < clen + 1; i++)
-        fprintf(f, "0 ");
-    fprintf(f, "0\n");
+      goto fail;
 
     for (i = 0; i < mlen; i++) {
-        fprintf(f, "0 ");
-        for (j = 0; j < clen; j++) {
-
-            if ((i & 0xF) == 0 || (j & 0xF) == 0) {
-
-                if (cnt[i][j] > 0)
-                    fprintf(f, "55 ");
-                else
-                    fprintf(f, "255 ");
-         
-            } else {
-
-                if (cnt[i][j] > 0)
-                    fprintf(f, "0 ");
-                else
-                    fprintf(f, "200 ");
-
-            }
-        }
-        fprintf(f, "0\n");
+      memcpy(my, mx, mlen);
+      my[i] += (detseq32() % 255) + 1;
+      if (aead->encrypt(cy, &clen, my, mlen, mx, 0, nsec, npub, key) != 0)
+        goto fail;
+      for (j = 0; j < clen; j++) {
+        if (cx[j] != cy[j])
+          cnt[i][j]++;
+      }
     }
+    steps++;
+    etim = clock() - stim;
+  } while (etim < limit);
 
-    for (i = 0; i < clen + 1; i++)
-        fprintf(f, "0 ");
+  strncpy(fn, aead->name, sizeof(fn));
+  for (i = 0; i < sizeof(fn); i++) {
+    if (fn[i] == 0 || fn[i] == '-')
+      break;
+  }
+
+  strncpy(&fn[i], ".def", sizeof(fn) - i);
+  f = fopen(fn, "w");
+  if (f == NULL) {
+    perror(fn);
+    return 1;
+  }
+  fn[i] = 0;
+  fprintf(f, "[%s]<br>key:%d  nsec:%d  npub:%d  pad:%d\n", fn,
+          8 * aead->keybytes, 8 * aead->nsecbytes, 8 * aead->npubbytes,
+          8 * aead->abytes);
+  fclose(f);
+
+  strncpy(&fn[i], ".pgm", sizeof(fn) - i);
+  f = fopen(fn, "w");
+  if (f == NULL) {
+    perror(fn);
+    return 1;
+  }
+
+  // output the file
+
+  fprintf(f, "P2\n# %s\n%d %d\n255\n", fn, (int)clen + 2, (int)mlen + 2);
+
+  for (i = 0; i < clen + 1; i++)
+    fprintf(f, "0 ");
+  fprintf(f, "0\n");
+
+  for (i = 0; i < mlen; i++) {
+    fprintf(f, "0 ");
+    for (j = 0; j < clen; j++) {
+
+      if ((i & 0xF) == 0 || (j & 0xF) == 0) {
+
+        if (cnt[i][j] > 0)
+          fprintf(f, "55 ");
+        else
+          fprintf(f, "255 ");
+
+      } else {
+
+        if (cnt[i][j] > 0)
+          fprintf(f, "0 ");
+        else
+          fprintf(f, "200 ");
+      }
+    }
     fprintf(f, "0\n");
+  }
 
-    fclose(f);
+  for (i = 0; i < clen + 1; i++)
+    fprintf(f, "0 ");
+  fprintf(f, "0\n");
 
-    return 0;
+  fclose(f);
+
+  return 0;
 
 fail:
-    printf("[%s] Incompatible parameters, bailing out.\n",
-        aead->name);
+  printf("[%s] Incompatible parameters, bailing out.\n", aead->name);
 
-    return 1;
+  return 1;
 }
-
-

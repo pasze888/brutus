@@ -11,19 +11,6 @@ BRUTUS_CC=`cat brutus_cc.cfg`
 rm -rf $AEADLIBS aeadlibs.txt 
 mkdir $AEADLIBS
 
-# 清理文件夹中的.o .a文件
-rm -rf OpenSSL_Interface_AES/*.o
-rm -rf OpenSSL_Interface_AES/*.a
-
-# 构建aes接口（替代openssl1.x）
-$BRUTUS_CC -c OpenSSL_Interface_AES/aes.c -Iinc -fPIC -o OpenSSL_Interface_AES/aes.o
-$BRUTUS_CC -c OpenSSL_Interface_AES/gmult.c -Iinc -fPIC -o OpenSSL_Interface_AES/gmult.o
-$BRUTUS_CC -c OpenSSL_Interface_AES/interface.c -Iinc -fPIC -o OpenSSL_Interface_AES/interface.o
-ar rcs OpenSSL_Interface_AES/libaes.a OpenSSL_Interface_AES/*.o
-rm -rf OpenSSL_Interface_AES/*.o
-
-# 构建aes接口（替代openssl1.x）
-$BRUTUS_CC "./OpenSSL_Interface_AES/aes.c"
 ls -1d $CRYPTO_AEAD/*/* | {
 	while read srcdir
 	do
@@ -34,8 +21,7 @@ ls -1d $CRYPTO_AEAD/*/* | {
 		echo COMPILING $srcfiles
 		$BRUTUS_CC -shared -fPIC -o $AEADLIBS/$aead.so \
 			-Iinc -I$srcdir -DBRUTUS_NAME='"'$aead'"' \
-			-LOpenSSL_Interface_AES \
-			$srcfiles src/aead_params.c -laes 2> $AEADLIBS/$aead.err
+			$srcfiles src/aead_params.c -lcrypto 2> $AEADLIBS/$aead.err
 		if [ -e $AEADLIBS/$aead.so ]
 		then
 			echo -n 'OK.  ' 
@@ -47,7 +33,6 @@ ls -1d $CRYPTO_AEAD/*/* | {
 		echo
 	done } | tee mkaeadlibs.log
 
-rm -rf OpenSSL_Interface_AES/*.a
 # create the list
 ls -1 $AEADLIBS/*.so > aeadlibs.txt
 
