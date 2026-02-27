@@ -40,28 +40,3 @@ void crypto_core_aes256decrypt(void *out, void *in, void *k, int flag) {
   aes.decrypt_block((unsigned char *)out, (unsigned char *)in);
 }
 }
-// make them available as symbols
-
-#ifdef BRUTUS_NAME
-const char brutus_name[] = BRUTUS_NAME;
-#endif
-
-#ifdef CRYPTO_KEYBYTES
-const int brutus_keybytes = (CRYPTO_KEYBYTES);
-#endif
-
-#ifdef CRYPTO_NSECBYTES
-const int brutus_nsecbytes = (CRYPTO_NSECBYTES);
-#endif
-
-#ifdef CRYPTO_NPUBBYTES
-const int brutus_npubbytes = (CRYPTO_NPUBBYTES);
-#endif
-
-#ifdef CRYPTO_ABYTES
-const int brutus_abytes = (CRYPTO_ABYTES);
-#endif
-
-#ifdef CRYPTO_NOOVERLAP
-const int brutus_nooverlap = (CRYPTO_NOOVERLAP);
-#endif

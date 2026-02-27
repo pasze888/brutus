@@ -20,9 +20,8 @@ ls -1d $CRYPTO_AEAD/*/* | {
 			$srcdir/*.s $srcdir/*.S  2> /dev/null`
 		echo COMPILING $srcfiles
 		$BRUTUS_CC -shared -fPIC -o $AEADLIBS/$aead.so \
-			-D USE_INTEL_AESNI \
 			-Iinc -I$srcdir -DBRUTUS_NAME='"'$aead'"' \
-			$srcfiles src/aead_params.cpp  2> $AEADLIBS/$aead.err
+			$srcfiles src/aead_params.cpp src/aead_params.c 2> $AEADLIBS/$aead.err
 		if [ -e $AEADLIBS/$aead.so ]
 		then
 			echo -n 'OK.  ' 

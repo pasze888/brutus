@@ -51,7 +51,7 @@ def compile_impl(compiler, impl_dir, lib_dir):
     print(f"== {lib_name} ==")
 
     sources = collect_sources(impl_dir)
-    src_list = [str(s) for s in sources] + ["src/aead_params.cpp"]
+    src_list = [str(s) for s in sources] + ["src/aead_params.cpp", "src/aead_params.c"]
     print(f"源文件: {' '.join(src_list)}")
 
     # 构建编译命令
@@ -59,11 +59,11 @@ def compile_impl(compiler, impl_dir, lib_dir):
     cmd = compiler_args
     cmd.extend(["-shared", "-fPIC"])
     cmd.extend(["-o", str(lib_file)])
-    cmd.append("-DUSE_INTEL_AESNI")
     for inc in INC_DIRS:
         cmd.append(f"-I{inc}")
     cmd.append(f"-I{impl_dir}")
     cmd.append(f'-DBRUTUS_NAME="{lib_name}"')
+    cmd.append("-DUSE_INTEL_AESNI")
     cmd.extend(src_list)
 
     # 执行编译，捕获错误输出
