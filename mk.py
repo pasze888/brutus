@@ -48,11 +48,15 @@ def compile_impl(compiler, impl_dir, lib_dir):
     lib_file = lib_dir / f"{lib_name}.so"
     err_file = lib_dir / f"{lib_name}.err"
 
-    print(f"== {lib_name} ==")
+    res = ""
+
+    res += f"== {lib_name} =="
+    # print(f"== {lib_name} ==")
 
     sources = collect_sources(impl_dir)
     src_list = [str(s) for s in sources] + ["src/aead_params.cpp", "src/aead_params.c"]
-    print(f"源文件: {' '.join(src_list)}")
+    res += f"源文件: {' '.join(src_list)}"
+    # print(f"源文件: {' '.join(src_list)}")
 
     # 构建编译命令
     compiler_args = shlex.split(compiler)
@@ -72,12 +76,13 @@ def compile_impl(compiler, impl_dir, lib_dir):
 
     if result.returncode == 0 and lib_file.exists():
         size = lib_file.stat().st_size
-        print(f"OK. 大小: {size} 字节")
-        return True
+        # print(f"OK. 大小: {size} 字节")
+        res += f"OK. 大小: {size} 字节"
     else:
         err_lines = sum(1 for _ in open(err_file))
-        print(f"FAIL. 错误行数: {err_lines} (详情见 {err_file})")
-        return False
+        # print(f"FAIL. 错误行数: {err_lines} (详情见 {err_file})")
+        res += f"FAIL. 错误行数: {err_lines} (详情见 {err_file})"
+    return res
 
 
 def main():
@@ -93,12 +98,9 @@ def main():
 
     with open(log_file, "w") as log:
         for impl_dir in impl_dirs:
-            success = compile_impl(compiler, impl_dir, AEADLIBS)
-            log.write(f"{success}\n")
-            print(success)
-            # 同时输出到屏幕和日志文件（通过 print 和 log.write）
-            # 这里简单用 print，但需要将输出同时写入 log
-            # 可以改用 tee 方式，但为简洁，此处省略完整 tee 实现
+            res = compile_impl(compiler, impl_dir, AEADLIBS)
+            log.write(f"{res}\n")
+            print(res)
 
     # 生成库列表
     libs = sorted(AEADLIBS.glob("*.so"))
