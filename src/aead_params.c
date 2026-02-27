@@ -1,3 +1,6 @@
+// aead_params.c
+// 21-Sep-14  Markku-Juhani O. Saarinen <mjos@iki.fi>
+
 // make them available as symbols
 
 #ifdef BRUTUS_NAME
